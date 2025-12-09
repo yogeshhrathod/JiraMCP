@@ -1,8 +1,21 @@
 # Jira MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-1.0-purple)](https://modelcontextprotocol.io)
+
+<!-- Add these badges once published to GitHub/npm -->
+<!-- ![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/jira-mcp-server?style=social) -->
+<!-- ![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/jira-mcp-server?style=social) -->
+<!-- ![GitHub issues](https://img.shields.io/github/issues/YOUR_USERNAME/jira-mcp-server) -->
+<!-- ![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR_USERNAME/jira-mcp-server) -->
+<!-- ![npm version](https://img.shields.io/npm/v/jira-mcp-server) -->
+<!-- ![npm downloads](https://img.shields.io/npm/dm/jira-mcp-server) -->
+
 A Model Context Protocol (MCP) server for self-hosted Jira instances using Personal Access Token (PAT) authentication.
 
-## Features
+## ✨ Features
 
 - **Issue Management**: Get, create, update, delete, and assign issues
 - **Search**: Search issues using JQL
@@ -13,20 +26,20 @@ A Model Context Protocol (MCP) server for self-hosted Jira instances using Perso
 - **Watchers**: Add watchers to issues
 - **Issue Links**: Link issues together
 
-## Prerequisites
+## 📋 Prerequisites
 
 - Node.js 18+
 - Self-hosted Jira instance (tested with v9.12.12)
 - Personal Access Token (PAT) for authentication
 
-## Installation
+## 🚀 Installation
 
 ```bash
 npm install
 npm run build
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 Create a `.env` file in the project root:
 
@@ -42,7 +55,7 @@ PAT=your-personal-access-token
 3. Create a new token with appropriate permissions
 4. Copy the token to your `.env` file
 
-## Usage
+## 📖 Usage
 
 ### Running the Server
 
@@ -75,7 +88,7 @@ Add the following to your MCP configuration:
 }
 ```
 
-## Available Tools (27 total)
+## 🛠️ Available Tools (27 total)
 
 ### Issue Operations
 
@@ -129,7 +142,7 @@ Add the following to your MCP configuration:
 | `jira_search_users`     | Search for users                   |
 | `jira_get_current_user` | Get the current authenticated user |
 
-## Workflow: Creating Issues with Required Fields
+## 📝 Workflow: Creating Issues with Required Fields
 
 1. **First**, call `jira_get_create_meta` to discover required fields and allowed values:
 
@@ -151,7 +164,7 @@ Add the following to your MCP configuration:
    )
    ```
 
-## Resources
+## 📚 Resources
 
 The server exposes MCP Resources for quick access to Jira data without tool calls:
 
@@ -181,7 +194,7 @@ Resources provide context without explicit tool calls. For example, reading `jir
 }
 ```
 
-## Example JQL Queries
+## 🔍 Example JQL Queries
 
 ```
 # Issues assigned to me
@@ -197,6 +210,47 @@ created >= -7d
 priority in (Highest, High)
 ```
 
-## License
+## 🤝 Contributing
 
-MIT
+Contributions are welcome! Here's how you can help:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+### Development Setup
+
+```bash
+# Clone your fork
+git clone https://github.com/YOUR_USERNAME/jira-mcp-server.git
+cd jira-mcp-server
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
+```
+
+### Reporting Issues
+
+- Use the [GitHub Issues](https://github.com/YOUR_USERNAME/jira-mcp-server/issues) to report bugs
+- Include your Node.js version, Jira version, and steps to reproduce
+- Check existing issues before creating a new one
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Model Context Protocol](https://modelcontextprotocol.io) for the MCP specification
+- [Atlassian](https://www.atlassian.com/) for Jira REST API documentation
+
+---
+
+<p align="center">
+  Made with ❤️ for the MCP community
+</p>

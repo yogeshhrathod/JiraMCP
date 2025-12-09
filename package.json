@@ -1,16 +1,42 @@
 {
-  "name": "jira-mcp-server",
+  "name": "jira-mcp-server-pro",
   "version": "1.0.0",
   "description": "MCP server for self-hosted Jira with Personal Access Token authentication",
   "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "jira-mcp-server-pro": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": ["mcp", "jira", "atlassian"],
+  "keywords": [
+    "mcp",
+    "jira",
+    "atlassian",
+    "model-context-protocol"
+  ],
   "license": "MIT",
+  "author": "yogeshrathod",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yogeshhrathod/jiraMCP.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yogeshhrathod/jiraMCP/issues"
+  },
+  "homepage": "https://github.com/yogeshhrathod/jiraMCP#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "dotenv": "^16.3.1",
