@@ -69,9 +69,50 @@ npm start
 npm run dev
 ```
 
-### Adding to Windsurf/Cursor
+### Using with npx (Recommended)
 
-Add the following to your MCP configuration:
+No installation required! Add the following to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "jira-mcp-server-pro"],
+      "env": {
+        "JIRA_BASE_URL": "https://your-jira-instance.com/",
+        "PAT": "your-personal-access-token"
+      }
+    }
+  }
+}
+```
+
+### Global Installation
+
+```bash
+npm install -g jira-mcp-server-pro
+```
+
+Then add to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "command": "jira-mcp-server-pro",
+      "env": {
+        "JIRA_BASE_URL": "https://your-jira-instance.com/",
+        "PAT": "your-personal-access-token"
+      }
+    }
+  }
+}
+```
+
+### Local Development
+
+If running from source, add the following to your MCP configuration:
 
 ```json
 {
