@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
@@ -29,6 +29,16 @@ jobs:
           echo "name=$(jq -r .name package.json)" >> $GITHUB_OUTPUT
           echo "version=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
 
+      - name: Check version bump
+        run: |
+          CURRENT_VERSION=${{ steps.package.outputs.version }}
+          PREVIOUS_VERSION=$(git show HEAD~1:package.json 2>/dev/null | jq -r '.version' || echo "0.0.0")
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ] && [ "$(printf '%s\n' "$PREVIOUS_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" = "$PREVIOUS_VERSION" ]; then
+            echo "version_bumped=true" >> $GITHUB_ENV
+          else
+            echo "version_bumped=false" >> $GITHUB_ENV
+          fi
+
       - name: Check if version exists on npm
         id: check
         run: |
@@ -39,19 +49,27 @@ jobs:
           fi
 
       - name: Install dependencies
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check.outputs.exists == 'false' && env.version_bumped == 'true'
         run: npm ci
 
       - name: Build
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check.outputs.exists == 'false' && env.version_bumped == 'true'
         run: npm run build
 
       - name: Publish to npm
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check.outputs.exists == 'false' && env.version_bumped == 'true'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Create tag
+        if: steps.check.outputs.exists == 'false' && env.version_bumped == 'true'
+        run: git tag v${{ steps.package.outputs.version }}
+
+      - name: Push tag
+        if: steps.check.outputs.exists == 'false' && env.version_bumped == 'true'
+        run: git push origin --tags
+
       - name: Skip publish
-        if: steps.check.outputs.exists == 'true'
-        run: echo "Version ${{ steps.package.outputs.version }} already exists on npm. Skipping publish."
+        if: steps.check.outputs.exists == 'true' || env.version_bumped == 'false'
+        run: echo "Version ${{ steps.package.outputs.version }} already exists on npm or no version bump detected. Skipping publish."
