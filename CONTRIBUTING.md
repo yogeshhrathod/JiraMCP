@@ -84,3 +84,7 @@ Feel free to open an issue for any questions about contributing.
 
 This is a public project. Never put real tokens, Jira hostnames, project keys, usernames, email addresses or ticket contents
 in code, tests, docs, issues or commit messages. Use invented data (see `test/integration.test.ts`).
+
+## Releases
+
+Maintainers: see [RELEASING.md](RELEASING.md).
