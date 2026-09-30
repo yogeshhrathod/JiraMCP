@@ -1,3 +1,4 @@
+import { requestSignal } from "./request-context.js";
 import type {
   JiraConfig,
   JiraIssue,
@@ -75,7 +76,7 @@ export class JiraClient {
         ),
       this.requestTimeoutMs
     );
-    const callerSignal = options.signal;
+    const callerSignal = options.signal ?? requestSignal.getStore();
     if (callerSignal) {
       if (callerSignal.aborted) {
         controller.abort(callerSignal.reason);
@@ -163,8 +164,9 @@ export class JiraClient {
       }
       const summary =
         typeof fields.summary === "string" ? fields.summary : undefined;
+      // Recovery must run even when the original request was cancelled.
       const recovered = summary
-        ? await this.findRecentlyCreatedIssue(summary).catch(() => undefined)
+        ? await requestSignal.run(undefined, () => this.findRecentlyCreatedIssue(summary)).catch(() => undefined)
         : undefined;
       if (recovered) {
         return {

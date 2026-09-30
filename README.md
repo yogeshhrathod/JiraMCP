@@ -1,17 +1,12 @@
 # Jira MCP Server
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)](https://www.typescriptlang.org/)
-[![MCP](https://img.shields.io/badge/MCP-1.0-purple)](https://modelcontextprotocol.io)
+[![MCP](https://img.shields.io/badge/MCP-2026--07--28-purple)](https://modelcontextprotocol.io)
 
-<!-- Add these badges once published to GitHub/npm -->
-<!-- ![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/jira-mcp-server?style=social) -->
-<!-- ![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/jira-mcp-server?style=social) -->
-<!-- ![GitHub issues](https://img.shields.io/github/issues/YOUR_USERNAME/jira-mcp-server) -->
-<!-- ![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR_USERNAME/jira-mcp-server) -->
-<!-- ![npm version](https://img.shields.io/npm/v/jira-mcp-server) -->
-<!-- ![npm downloads](https://img.shields.io/npm/dm/jira-mcp-server) -->
+[![npm](https://img.shields.io/npm/v/jira-mcp-server-pro)](https://www.npmjs.com/package/jira-mcp-server-pro)
+[![CI](https://github.com/yogeshhrathod/jiraMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/yogeshhrathod/jiraMCP/actions/workflows/ci.yml)
 
 A Model Context Protocol (MCP) server for self-hosted Jira instances using Personal Access Token (PAT) authentication.
 
@@ -23,12 +18,12 @@ A Model Context Protocol (MCP) server for self-hosted Jira instances using Perso
 - **Duplicate-safe create**: timeouts and dropped connections are not retried blindly; the server looks for the ticket it may have created. The response reports the real key/project (Jira automation can move tickets).
 - **Workflow-aware transitions**: transitions by name, with required transition-screen fields (resolution, assignee, comment) resolved against their real options.
 - **Works across Jira versions**: create metadata falls back from the paged endpoint to the legacy endpoint to edit metadata.
-- **Modern MCP**: typed tools with titles, annotations and output schemas, resource templates, prompts, argument completions, elicitation, logging and server instructions.
+- **Current MCP**: built on the v2 TypeScript SDK. One server serves both the 2025 and the 2026-07-28 protocol revisions (see [MCP features](#-mcp-features)).
 - Issues, JQL search, comments, projects, users, watchers and links.
 
 ## 📋 Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - Self-hosted Jira Server / Data Center (tested with 9.x and 10.x)
 - Personal Access Token (PAT) for authentication
 
@@ -166,6 +161,23 @@ All tools carry MCP annotations (read-only / destructive / idempotent hints) and
 | `jira_delete_issue`                                    | Destructive; asks for confirmation when supported |
 | `jira_report_issue`                                    | Builds a redacted GitHub issue draft; nothing is filed automatically |
 
+## 🔌 MCP features
+
+| Feature | How it is used |
+| --- | --- |
+| Tools with `title`, annotations, `outputSchema` and `structuredContent` | Every tool; read-only, destructive and idempotent hints; typed results for create/update/transition |
+| Elicitation (multi-round-trip `input_required`) | Ambiguous values, unknown projects, missing required fields, delete confirmation. Answers are carried in signed `requestState`, so it also works on the 2025 protocol via the SDK's compatibility shim |
+| Resource links | Create/update/search results link to `jira://issue/{key}` |
+| Resources and resource templates with completion | Projects, issues, create-fields; project keys and issue types autocomplete |
+| Prompts with argument completion | `create-ticket`, `close-ticket`, `my-work-summary` |
+| Cache hints (`ttlMs`, `cacheScope`) | Tool/prompt lists cached for a day; Jira reference data (priorities, statuses, fields) for five minutes |
+| Progress notifications | Reported while creating an issue when the client sends a progress token |
+| Cancellation | The request's abort signal reaches the Jira HTTP call |
+| Server `instructions` | Tells the model how to handle ambiguous values, lost responses and repeated failures |
+| Registry metadata | `server.json` and `mcpName` for the official MCP Registry |
+
+Deliberately not used: MCP **logging, sampling and roots** are deprecated in the 2026-07-28 revision (diagnostics go to stderr instead). **Tasks** and HTTP transports are not needed for a local stdio server where every operation is short; adding an HTTP transport would expose a token-backed server on the network, so it is intentionally left out.
+
 ## 🧠 How value resolution works
 
 For every field you pass, the server reads Jira's metadata for that project/issue type (or the issue, when updating) and:
@@ -247,8 +259,8 @@ Contributions are welcome! Here's how you can help:
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/jira-mcp-server.git
-cd jira-mcp-server
+git clone https://github.com/yogeshhrathod/jiraMCP.git
+cd jiraMCP
 
 # Install dependencies
 npm install
@@ -259,7 +271,7 @@ npm run dev
 
 ### Reporting Issues
 
-- Use the [GitHub Issues](https://github.com/YOUR_USERNAME/jira-mcp-server/issues) to report bugs
+- Use the [GitHub Issues](https://github.com/yogeshhrathod/jiraMCP/issues) to report bugs
 - Include your Node.js version, Jira version, and steps to reproduce
 - Check existing issues before creating a new one
 
@@ -293,3 +305,9 @@ Optional: `JIRA_REQUEST_TIMEOUT_MS` (default 120000).
 ```bash
 npm test
 ```
+
+Unit tests cover option matching and redaction. Integration tests start the real server over stdio against a fake Jira and run each scenario on both protocol eras, including multi-round elicitation.
+
+## 📦 MCP Registry
+
+The repository ships `server.json` and `mcpName` so the package can be listed in the [official MCP Registry](https://modelcontextprotocol.io/registry/quickstart) (`mcp-publisher login github && mcp-publisher publish`, after the npm release).

@@ -254,15 +254,25 @@ export function findField(fields: FieldMeta[], key: string): FieldMeta | undefin
   );
 }
 
+/** Returned by an Elicitor when a question has been queued for the client but not answered yet. */
+export const PENDING = Symbol("pending");
+export type Answer = string | undefined | typeof PENDING;
+
+/**
+ * Asks the user a question. `key` is a stable identifier for the question so an
+ * answer given in an earlier round can be replayed on retry. `undefined` means
+ * unanswered/declined; `PENDING` means the question was queued for the client.
+ */
 export interface Elicitor {
-  choose(opts: { message: string; label: string; options: Array<{ value: string; title: string }> }): Promise<string | undefined>;
-  text(opts: { message: string; label: string }): Promise<string | undefined>;
+  choose(opts: { key: string; message: string; label: string; options: Array<{ value: string; title: string }> }): Promise<Answer>;
+  text(opts: { key: string; message: string; label: string }): Promise<Answer>;
 }
 
 export interface ResolveAllResult {
   fields: Record<string, unknown>;
   notes: string[];
   problems: FieldProblem[];
+  awaiting: boolean;
 }
 
 const NEVER_REQUIRED_ASK = new Set(["project", "issuetype", "reporter", "attachment", "comment"]);
@@ -278,7 +288,7 @@ export async function resolveAll(
   meta: FieldMeta[],
   opts: { accurate: boolean; elicitor?: Elicitor; checkRequired?: boolean; skip?: Set<string> }
 ): Promise<ResolveAllResult> {
-  const out: ResolveAllResult = { fields: {}, notes: [], problems: [] };
+  const out: ResolveAllResult = { fields: {}, notes: [], problems: [], awaiting: false };
   const { elicitor } = opts;
 
   for (const [key, raw] of Object.entries(input)) {
@@ -312,11 +322,16 @@ export async function resolveAll(
       }
       const picked = elicitor && r.candidates.length
         ? await elicitor.choose({
+            key: `field:${field.fieldId}:${attempt}`,
             message: r.problem.message.split(" Ask the user")[0],
             label: field.name,
             options: r.candidates.slice(0, 25).map((o) => ({ value: String(o.id ?? optionLabel(o)), title: optionLabel(o) })),
           })
         : undefined;
+      if (picked === PENDING) {
+        out.awaiting = true;
+        break;
+      }
       if (picked === undefined) {
         out.problems.push(r.problem);
         break;
@@ -336,15 +351,20 @@ export async function resolveAll(
       if (out.problems.some((p) => p.fieldId === f.fieldId)) continue;
 
       const label = f.name;
-      let answer: string | undefined;
+      let answer: Answer;
       if (elicitor) {
         answer = f.allowedValues?.length && !isUser(f)
           ? await elicitor.choose({
+              key: `required:${f.fieldId}`,
               message: `"${label}" is required. Choose a value.`,
               label,
               options: f.allowedValues.slice(0, 25).map((o) => ({ value: String(o.id ?? optionLabel(o)), title: optionLabel(o) })),
             })
-          : await elicitor.text({ message: `"${label}" is required. Enter a value.`, label });
+          : await elicitor.text({ key: `required:${f.fieldId}`, message: `"${label}" is required. Enter a value.`, label });
+      }
+      if (answer === PENDING) {
+        out.awaiting = true;
+        continue;
       }
       if (answer === undefined) {
         out.problems.push({

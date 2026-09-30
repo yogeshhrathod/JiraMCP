@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { matchOption, resolveAll, resolveField, type Elicitor } from "../src/smart-fields.js";
+import { PENDING, matchOption, resolveAll, resolveField, type Elicitor } from "../src/smart-fields.js";
 import type { FieldMeta } from "../src/types.js";
 
 const priority: FieldMeta = {
@@ -108,4 +108,18 @@ test("declined elicitation falls back to a problem", async () => {
   const elicitor: Elicitor = { async choose() { return undefined; }, async text() { return undefined; } };
   const r = await resolveAll({ customfield_100: "nope" }, all, { accurate: true, elicitor });
   assert.equal(r.problems.length, 1);
+});
+
+test("PENDING answers mark the result as awaiting without recording problems", async () => {
+  const elicitor: Elicitor = { async choose() { return PENDING; }, async text() { return PENDING; } };
+  const r = await resolveAll({ priority: "P" }, all, { accurate: true, checkRequired: true, elicitor });
+  assert.equal(r.awaiting, true);
+  assert.equal(r.problems.length, 0);
+});
+
+test("question keys are stable so answers can be replayed", async () => {
+  const keys: string[] = [];
+  const elicitor: Elicitor = { async choose({ key }) { keys.push(key); return PENDING; }, async text({ key }) { keys.push(key); return PENDING; } };
+  await resolveAll({ priority: "P" }, all, { accurate: true, checkRequired: true, elicitor });
+  assert.deepEqual(keys, ["field:priority:0", "required:customfield_100"]);
 });

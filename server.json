@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yogeshhrathod/jira-mcp-server-pro",
+  "title": "Jira MCP Server",
+  "description": "Self-hosted Jira (PAT auth) with smart option matching, elicitation, prompts and duplicate-safe ticket creation.",
+  "repository": {
+    "url": "https://github.com/yogeshhrathod/jiraMCP",
+    "source": "github"
+  },
+  "version": "1.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "jira-mcp-server-pro",
+      "version": "1.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "JIRA_BASE_URL",
+          "description": "Base URL of your self-hosted Jira, e.g. https://jira.example.com",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "PAT",
+          "description": "Jira Personal Access Token",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "JIRA_REQUEST_TIMEOUT_MS",
+          "description": "Per-request timeout in milliseconds (default 120000)",
+          "isRequired": false,
+          "format": "number"
+        }
+      ]
+    }
+  ]
+}

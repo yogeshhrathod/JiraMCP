@@ -45,14 +45,17 @@ Please be respectful and constructive in all interactions. We welcome contributo
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/jira-mcp-server.git
-cd jira-mcp-server
+git clone https://github.com/yogeshhrathod/jiraMCP.git
+cd jiraMCP
 
 # Install dependencies
 npm install
 
 # Build
 npm run build
+
+# Run the tests (unit + integration against a fake Jira)
+npm test
 
 # Run in development mode
 npm run dev
@@ -76,3 +79,8 @@ Before submitting a PR, ensure:
 ## Questions?
 
 Feel free to open an issue for any questions about contributing.
+
+## Keep it public-safe
+
+This is a public project. Never put real tokens, Jira hostnames, project keys, usernames, email addresses or ticket contents
+in code, tests, docs, issues or commit messages. Use invented data (see `test/integration.test.ts`).

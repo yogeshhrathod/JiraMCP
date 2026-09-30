@@ -1,5 +1,6 @@
 import { JiraApiError, type JiraClient } from "./jira-client.js";
 import {
+  PENDING,
   matchOption,
   optionLabel,
   rankOptions,
@@ -11,7 +12,7 @@ import type { FieldMeta, FieldOption, JiraProject } from "./types.js";
 
 export type Prepared =
   | { ready: true; fields: Record<string, unknown>; notes: string[]; metaSource?: string }
-  | { ready: false; problems: FieldProblem[]; notes: string[] };
+  | { ready: false; awaiting?: boolean; problems: FieldProblem[]; notes: string[] };
 
 const problem = (fieldId: string, fieldName: string, kind: FieldProblem["kind"], message: string, options?: string[], input?: string): FieldProblem =>
   ({ fieldId, fieldName, kind, message, options, input });
@@ -42,7 +43,7 @@ export async function resolveProject(
   client: JiraClient,
   requested: string,
   elicitor?: Elicitor
-): Promise<{ key: string; note?: string } | { problem: FieldProblem }> {
+): Promise<{ key: string; note?: string } | { problem: FieldProblem } | { awaiting: true }> {
   for (const candidate of new Set([requested, requested.toUpperCase()])) {
     try {
       const p = await client.getProject(candidate);
@@ -55,10 +56,12 @@ export async function resolveProject(
   const listing = suggestions.map((p) => `${p.key} (${p.name})`);
   if (elicitor && suggestions.length) {
     const picked = await elicitor.choose({
+      key: "project",
       message: `Project "${requested}" does not exist. Which project should be used?`,
       label: "Project",
       options: suggestions.map((p) => ({ value: p.key, title: `${p.key} - ${p.name}` })),
     });
+    if (picked === PENDING) return { awaiting: true };
     if (picked) return { key: picked, note: `Project "${requested}" does not exist; user selected ${picked}` };
   }
   return {
@@ -101,6 +104,7 @@ export async function prepareCreate(client: JiraClient, args: CreateInput, elici
   const notes: string[] = [];
 
   const project = await resolveProject(client, args.projectKey, elicitor);
+  if ("awaiting" in project) return { ready: false, awaiting: true, problems: [], notes };
   if ("problem" in project) return { ready: false, problems: [project.problem], notes };
   if (project.note) notes.push(project.note);
 
@@ -112,11 +116,13 @@ export async function prepareCreate(client: JiraClient, args: CreateInput, elici
     const all = (candidates.length ? candidates : types).slice(0, 25);
     const picked = elicitor
       ? await elicitor.choose({
+          key: "issuetype",
           message: `"${args.issueType}" is not a valid issue type in ${project.key}. Choose one.`,
           label: "Issue type",
           options: all.map((t) => ({ value: String(t.id), title: optionLabel(t) })),
         })
       : undefined;
+    if (picked === PENDING) return { ready: false, awaiting: true, problems: [], notes };
     issueType = all.find((t) => String(t.id) === picked);
     if (!issueType) {
       return {
@@ -154,6 +160,7 @@ export async function prepareCreate(client: JiraClient, args: CreateInput, elici
     skip: new Set(["summary"]),
   });
   notes.push(...resolved.notes);
+  if (resolved.awaiting) return { ready: false, awaiting: true, problems: resolved.problems, notes };
   if (resolved.problems.length) return { ready: false, problems: resolved.problems, notes };
 
   return {
@@ -192,6 +199,7 @@ export async function prepareUpdate(client: JiraClient, issueKey: string, args: 
   for (const k of Object.keys(wanted)) if (wanted[k] === undefined) delete wanted[k];
 
   const r = await resolveAll(wanted, meta, { accurate: true, elicitor });
+  if (r.awaiting) return { ready: false, awaiting: true, problems: r.problems, notes: r.notes };
   if (r.problems.length) return { ready: false, problems: r.problems, notes: r.notes };
   return { ready: true, fields: r.fields, notes: r.notes };
 }
@@ -205,7 +213,7 @@ export interface TransitionInput {
 
 export type PreparedTransition =
   | { ready: true; transitionId: string; transitionName: string; comment?: string; fields?: Record<string, unknown>; notes: string[] }
-  | { ready: false; problems: FieldProblem[]; notes: string[] };
+  | { ready: false; awaiting?: boolean; problems: FieldProblem[]; notes: string[] };
 
 export async function prepareTransition(client: JiraClient, issueKey: string, args: TransitionInput, elicitor?: Elicitor): Promise<PreparedTransition> {
   const { transitions } = await client.getTransitions(issueKey);
@@ -228,11 +236,13 @@ export async function prepareTransition(client: JiraClient, issueKey: string, ar
   if (!chosen) {
     const picked = elicitor
       ? await elicitor.choose({
+          key: "transition",
           message: `"${query}" is not an available transition for ${issueKey}. Choose one.`,
           label: "Transition",
           options: transitions.map((t) => ({ value: t.id, title: `${t.name} -> ${t.to?.name}` })),
         })
       : undefined;
+    if (picked === PENDING) return { ready: false, awaiting: true, notes, problems: [] };
     chosen = transitions.find((t) => t.id === picked);
     if (!chosen) {
       return { ready: false, notes, problems: [problem("transition", "Transition", "invalid",
@@ -245,7 +255,9 @@ export async function prepareTransition(client: JiraClient, issueKey: string, ar
   let comment = args.comment;
   const commentMeta = meta.find((f) => f.fieldId === "comment");
   if (commentMeta?.required && !comment) {
-    comment = elicitor ? await elicitor.text({ message: "This transition requires a comment.", label: "Comment" }) : undefined;
+    const asked = elicitor ? await elicitor.text({ key: "comment", message: "This transition requires a comment.", label: "Comment" }) : undefined;
+    if (asked === PENDING) return { ready: false, awaiting: true, notes, problems: [] };
+    comment = asked;
     if (!comment) {
       return { ready: false, notes, problems: [problem("comment", "Comment", "missing", `Transition "${chosen.name}" requires a comment. Provide the comment argument.`)] };
     }
@@ -257,6 +269,7 @@ export async function prepareTransition(client: JiraClient, issueKey: string, ar
     checkRequired: true,
   });
   notes.push(...r.notes);
+  if (r.awaiting) return { ready: false, awaiting: true, notes, problems: r.problems };
   if (r.problems.length) return { ready: false, notes, problems: r.problems };
   return {
     ready: true,
