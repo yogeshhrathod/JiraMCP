@@ -4,7 +4,7 @@
   "title": "Jira MCP Server",
   "description": "Self-hosted Jira (PAT auth) with smart option matching, elicitation, prompts and duplicate-safe ticket creation.",
   "repository": {
-    "url": "https://github.com/yogeshhrathod/jiraMCP",
+    "url": "https://github.com/yogeshhrathod/JiraMCP",
     "source": "github"
   },
   "version": "2.0.0",

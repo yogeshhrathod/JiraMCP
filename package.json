@@ -31,12 +31,12 @@
   "author": "yogeshrathod",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yogeshhrathod/jiraMCP.git"
+    "url": "git+https://github.com/yogeshhrathod/JiraMCP.git"
   },
   "bugs": {
-    "url": "https://github.com/yogeshhrathod/jiraMCP/issues"
+    "url": "https://github.com/yogeshhrathod/JiraMCP/issues"
   },
-  "homepage": "https://github.com/yogeshhrathod/jiraMCP#readme",
+  "homepage": "https://github.com/yogeshhrathod/JiraMCP#readme",
   "engines": {
     "node": ">=20.0.0"
   },
