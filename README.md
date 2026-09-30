@@ -17,19 +17,19 @@ A Model Context Protocol (MCP) server for self-hosted Jira instances using Perso
 
 ## ✨ Features
 
-- **Issue Management**: Get, create, update, delete, and assign issues
-- **Search**: Search issues using JQL
-- **Comments**: Get, add, update, and delete comments
-- **Transitions**: Get available transitions and transition issues
-- **Projects**: List and get project details
-- **Users**: Search users and get current user
-- **Watchers**: Add watchers to issues
-- **Issue Links**: Link issues together
+- **Smart field handling**: values are matched against each field's real selectable options (dropdowns, multi-selects, cascading selects, versions, components, priorities) before anything is sent to Jira. Harmless differences (case, spacing, unique partial names) are fixed; ambiguous or invalid values are never guessed.
+- **Asks instead of failing**: on clients that support MCP elicitation, ambiguous values, unknown projects and missing required fields are put to the user as choices. Other clients get the valid options in the error so the model can ask.
+- **Project discovery**: a project key that does not exist (renamed, split or retired) returns the closest live projects instead of a blind failure.
+- **Duplicate-safe create**: timeouts and dropped connections are not retried blindly; the server looks for the ticket it may have created. The response reports the real key/project (Jira automation can move tickets).
+- **Workflow-aware transitions**: transitions by name, with required transition-screen fields (resolution, assignee, comment) resolved against their real options.
+- **Works across Jira versions**: create metadata falls back from the paged endpoint to the legacy endpoint to edit metadata.
+- **Modern MCP**: typed tools with titles, annotations and output schemas, resource templates, prompts, argument completions, elicitation, logging and server instructions.
+- Issues, JQL search, comments, projects, users, watchers and links.
 
 ## 📋 Prerequisites
 
 - Node.js 18+
-- Self-hosted Jira instance (tested with v9.12.12)
+- Self-hosted Jira Server / Data Center (tested with 9.x and 10.x)
 - Personal Access Token (PAT) for authentication
 
 ## 🚀 Installation
@@ -129,111 +129,93 @@ If running from source, add the following to your MCP configuration:
 }
 ```
 
-## 🛠️ Available Tools (27 total)
+## 🛠️ Available Tools (29)
 
-### Issue Operations
+All tools carry MCP annotations (read-only / destructive / idempotent hints) and a human-readable title.
 
-| Tool                         | Description                                                                   |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `jira_get_issue`             | Get details of a Jira issue by its key                                        |
-| `jira_search_issues`         | Search for issues using JQL                                                   |
-| `jira_create_issue`          | Create a new issue (basic fields)                                             |
-| `jira_create_issue_advanced` | Create issue with full field support (fixVersions, components, custom fields) |
-| `jira_update_issue`          | Update an existing issue (basic fields)                                       |
-| `jira_update_issue_advanced` | Update issue with full field support                                          |
-| `jira_delete_issue`          | Delete an issue                                                               |
-| `jira_assign_issue`          | Assign or unassign an issue                                                   |
-| `jira_get_transitions`       | Get available transitions for an issue                                        |
-| `jira_transition_issue`      | Transition an issue to a new status                                           |
-| `jira_link_issues`           | Link two issues                                                               |
-| `jira_add_watcher`           | Add a watcher to an issue                                                     |
+### Smart create, update and transition
 
-### Comments
+| Tool                         | Description                                                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `jira_create_issue`          | Create an issue; issue type, priority and other options are validated against real options. Supports `dryRun`.              |
+| `jira_create_issue_advanced` | Adds components, versions, reporter and `customFields` (by field id **or display name**). Supports `dryRun`.                |
+| `jira_update_issue`          | Update basic fields with option matching against the issue's editable fields                                                |
+| `jira_update_issue_advanced` | Update any editable field, including custom fields                                                                          |
+| `jira_transition_issue`      | Transition by name or id; required transition-screen fields (resolution, assignee, comment) are resolved or asked for       |
 
-| Tool                | Description               |
-| ------------------- | ------------------------- |
-| `jira_get_comments` | Get comments on an issue  |
-| `jira_add_comment`  | Add a comment to an issue |
+### Discovery
 
-### Projects
+| Tool                         | Description                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| `jira_find_project`          | Fuzzy project lookup by key or name                                                  |
+| `jira_get_field_options`     | Selectable options of a field (by id or name), optionally ranked against a query     |
+| `jira_get_create_meta`       | Fields, required flags and options for a project and issue type                      |
+| `jira_get_edit_meta`         | Editable fields and options for an existing issue                                    |
+| `jira_get_transitions`       | Transitions with the fields each requires                                            |
+| `jira_get_projects` / `jira_get_project` / `jira_get_project_versions` / `jira_get_project_components` | Project data |
+| `jira_get_fields` / `jira_get_priorities` / `jira_get_statuses` / `jira_get_issue_link_types`        | Instance metadata |
+| `jira_search_users` / `jira_get_current_user` | Users                                                                      |
 
-| Tool                          | Description                                      |
-| ----------------------------- | ------------------------------------------------ |
-| `jira_get_projects`           | Get all projects                                 |
-| `jira_get_project`            | Get details of a specific project                |
-| `jira_get_project_versions`   | Get all versions for a project (for fixVersions) |
-| `jira_get_project_components` | Get all components for a project                 |
+### Issues and comments
 
-### Metadata & Field Discovery
+| Tool                                                   | Description                                       |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `jira_get_issue`, `jira_search_issues`                 | Read and JQL search                               |
+| `jira_assign_issue`, `jira_link_issues`, `jira_add_watcher` | Assign, link, watch                          |
+| `jira_get_comments`, `jira_add_comment`                | Comments                                          |
+| `jira_delete_issue`                                    | Destructive; asks for confirmation when supported |
+| `jira_report_issue`                                    | Builds a redacted GitHub issue draft; nothing is filed automatically |
 
-| Tool                        | Description                                                               |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `jira_get_create_meta`      | **IMPORTANT**: Get required fields and allowed values for creating issues |
-| `jira_get_edit_meta`        | Get editable fields and allowed values for an existing issue              |
-| `jira_get_fields`           | Get all available fields including custom fields                          |
-| `jira_get_field_options`    | Get allowed values for a specific field                                   |
-| `jira_get_priorities`       | Get all available priorities                                              |
-| `jira_get_statuses`         | Get all available statuses                                                |
-| `jira_get_issue_link_types` | Get all available issue link types                                        |
+## 🧠 How value resolution works
 
-### Users
+For every field you pass, the server reads Jira's metadata for that project/issue type (or the issue, when updating) and:
 
-| Tool                    | Description                        |
-| ----------------------- | ---------------------------------- |
-| `jira_search_users`     | Search for users                   |
-| `jira_get_current_user` | Get the current authenticated user |
+1. finds the field by id or display name,
+2. matches the value to the field's options by id, exact label, normalized label, then unique prefix/substring,
+3. shapes it correctly (`{id}` for selects, arrays for multi-selects, `{id, child:{id}}` for cascading selects, `{name}` for users),
+4. for anything ambiguous or invalid, asks the user (elicitation) or returns the closest valid options,
+5. asks for required fields that were not provided.
 
-## 📝 Workflow: Creating Issues with Required Fields
+Cascading selects accept `"Parent > Child"`. Use `dryRun: true` to preview the exact payload.
 
-1. **First**, call `jira_get_create_meta` to discover required fields and allowed values:
+## 📝 Workflow: creating issues
 
-   ```
-   jira_get_create_meta(projectKey: "PROJ", issueType: "Bug")
-   ```
+```
+jira_create_issue_advanced(
+  projectKey: "PROJ",
+  issueType: "bug",              // matched to "Bug"
+  summary: "Login fails",
+  priority: "high",              // matched to the real priority name
+  customFields: { "Environment": "staging" },
+  dryRun: true
+)
+```
 
-   This returns all fields with their requirements and dropdown options.
+Review the returned payload, then call again without `dryRun`.
 
-2. **Then**, use `jira_create_issue_advanced` with the correct values:
-   ```
-   jira_create_issue_advanced(
-     projectKey: "PROJ",
-     summary: "Issue title",
-     issueType: "Bug",
-     fixVersions: ["1.0.0"],
-     components: ["Backend"],
-     customFields: {"customfield_10001": "value"}
-   )
-   ```
+## 💬 Prompts
+
+| Prompt            | Purpose                                                  |
+| ----------------- | -------------------------------------------------------- |
+| `create-ticket`   | Guided creation: find project, dry run, confirm, create  |
+| `close-ticket`    | Close with the resolution/comment the workflow requires  |
+| `my-work-summary` | Summarize your open issues by priority                   |
+
+Prompt arguments such as `project` support autocompletion.
 
 ## 📚 Resources
 
-The server exposes MCP Resources for quick access to Jira data without tool calls:
-
-| Resource URI           | Description                                            |
-| ---------------------- | ------------------------------------------------------ |
-| `jira://config`        | Server configuration and connection info               |
-| `jira://current-user`  | Currently authenticated user details                   |
-| `jira://priorities`    | All available issue priorities                         |
-| `jira://statuses`      | All available issue statuses                           |
-| `jira://fields`        | All fields (system + custom) grouped by type           |
-| `jira://link-types`    | Available issue link types                             |
-| `jira://projects`      | List of all projects (key, name, type)                 |
-| `jira://project/{KEY}` | Project details with versions, components, issue types |
-| `jira://my-issues`     | Issues assigned to current user                        |
-
-### Using Resources
-
-Resources provide context without explicit tool calls. For example, reading `jira://project/PROJ` returns:
-
-```json
-{
-  "key": "PROJ",
-  "name": "PROJ",
-  "versions": [{"name": "1.0.0", "released": true}, ...],
-  "components": [{"name": "LOGIN"}, {"name": "API"}, ...],
-  "issueTypes": [{"id": "1", "name": "Bug"}, {"id": "3", "name": "Task"}, ...]
-}
-```
+| Resource URI                               | Description                                                     |
+| ------------------------------------------ | --------------------------------------------------------------- |
+| `jira://current-user`                      | Authenticated user                                              |
+| `jira://priorities` / `jira://statuses`    | Priorities and statuses                                         |
+| `jira://fields`                            | System and custom fields                                        |
+| `jira://link-types`                        | Issue link types                                                |
+| `jira://projects`                          | Projects (key, name, type)                                      |
+| `jira://my-issues`                         | Open issues assigned to you                                     |
+| `jira://project/{key}`                     | Versions, components and issue types (key autocompletes)        |
+| `jira://issue/{key}`                       | An issue                                                        |
+| `jira://project/{key}/fields/{issueType}`  | Fields, required flags and options for creating that issue type |
 
 ## 🔍 Example JQL Queries
 
@@ -295,3 +277,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <p align="center">
   Made with ❤️ for the MCP community
 </p>
+
+## 🐞 Repeated failures and bug reports
+
+If a tool fails twice with the same error, or fails with an unexpected server error, the response tells the AI to stop retrying and suggest a GitHub issue. `jira_report_issue` then prepares a draft with the tool name, redacted error, and versions, plus a prefilled link. Tokens, hostnames, emails, ticket keys and quoted values are stripped, and nothing is submitted until the user opens the link.
+
+## 🔒 Security
+
+Credentials are read only from the `JIRA_BASE_URL` and `PAT` environment variables (or a local `.env`, which is git-ignored). Nothing is logged or returned that contains the token. Keep tokens out of committed MCP client configs, and rotate any token that was ever committed or shared.
+
+Optional: `JIRA_REQUEST_TIMEOUT_MS` (default 120000).
+
+## 🧪 Tests
+
+```bash
+npm test
+```

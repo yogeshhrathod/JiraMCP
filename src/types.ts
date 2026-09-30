@@ -1,6 +1,7 @@
 export interface JiraConfig {
   baseUrl: string;
   pat: string;
+  requestTimeoutMs?: number;
 }
 
 export interface JiraIssue {
@@ -76,6 +77,8 @@ export interface JiraTransition {
     id: string;
     name: string;
   };
+  hasScreen?: boolean;
+  fields?: Record<string, RawFieldMeta>;
 }
 
 export interface JiraSearchResult {
@@ -92,6 +95,12 @@ export interface JiraUser {
   emailAddress: string;
   displayName: string;
   active: boolean;
+}
+
+export interface JiraCreateIssueResponse {
+  id: string;
+  key: string;
+  self: string;
 }
 
 export interface JiraCreateIssueRequest {
@@ -116,4 +125,50 @@ export interface JiraUpdateIssueRequest {
     labels?: string[];
     [key: string]: unknown;
   };
+}
+
+export interface FieldOption {
+  id?: string;
+  name?: string;
+  value?: string;
+  key?: string;
+  label?: string;
+  children?: FieldOption[];
+  [key: string]: unknown;
+}
+
+export interface FieldSchema {
+  type: string;
+  items?: string;
+  system?: string;
+  custom?: string;
+  customId?: number;
+}
+
+export interface RawFieldMeta {
+  fieldId?: string;
+  key?: string;
+  name: string;
+  required?: boolean;
+  schema?: FieldSchema;
+  allowedValues?: FieldOption[];
+  defaultValue?: unknown;
+  hasDefaultValue?: boolean;
+}
+
+export interface FieldMeta {
+  fieldId: string;
+  name: string;
+  required: boolean;
+  schema?: FieldSchema;
+  hasDefaultValue: boolean;
+  hasAllowedValues: boolean;
+  allowedValues?: FieldOption[];
+}
+
+export interface CreateMetaResult {
+  projectKey: string;
+  metaSource: string;
+  accurate: boolean;
+  issueTypes: Array<{ id: string; name: string; fields: FieldMeta[] }>;
 }
