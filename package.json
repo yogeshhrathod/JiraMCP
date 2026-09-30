@@ -51,5 +51,8 @@
     "tsx": "^4.6.2",
     "typescript": "^5.3.2"
   },
-  "mcpName": "io.github.yogeshhrathod/jira-mcp-server-pro"
+  "mcpName": "io.github.yogeshhrathod/jira-mcp-server-pro",
+  "publishConfig": {
+    "access": "public"
+  }
 }
